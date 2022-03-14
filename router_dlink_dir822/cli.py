@@ -12,9 +12,22 @@ import argparse
 import json
 import logging
 import os
+import re
 import sys
 
 import device_dlink_dir822
+
+
+def urlify(s):
+    """source: https://stackoverflow.com/questions/1007481/how-to-replace-whitespaces-with-underscore"""
+
+    # Remove all non-word characters (everything except numbers and letters)
+    s = re.sub(r"[^\w\s]", "", s)
+
+    # Replace all runs of whitespace with a single dash
+    s = re.sub(r"\s+", "_", s)
+
+    return s
 
 
 def main():
@@ -37,7 +50,16 @@ def main():
     wifi.add_argument("-c", "--change-state", default=None, type=int)
     wifi.add_argument("-s", "--state", action="store_true")
     wifi.add_argument("-r", "--radio-name", default="RADIO_2.4GHz", type=str)
-    statistic.add_argument("-w", "--wifi-name", default="WLAN2.4G", type=str)
+    statistic.add_argument(
+        "-m",
+        "--multiple-net",
+        dest="multi_net",
+        default=["RADIO_2.4GHz", "LAN", "WAN"],
+        metavar="N",
+        type=str,
+        nargs="+",
+        help="Name of networks interface to retrieve information",
+    )
     args = parser.parse_args()
 
     try:
@@ -55,9 +77,10 @@ def main():
 
             elif args.state:
                 value = dlink_router.get_wifi_status(args.radio_name)
-                if True == value:
+                if value:
                     return 0
                 return 1
+
             else:
                 print("Missing optional parameter")
                 parser.print_help()
@@ -68,10 +91,23 @@ def main():
             dlink_router = device_dlink_dir822.DeviceDlink822Factory(
                 password=args.password
             )
+            final_stat = dict()
+            for interface in args.multi_net:
+                stat = dlink_router.get_interface_stats(interface)
+                # Refactor output to have everything at first level
+                for key, value in stat["InterfaceStatistics"]["StatisticInfo"].items():
+                    stat[f"{urlify(interface)}_{key}"] = value
 
-            # text_commande = "Retrieve stats"
-            stat = dlink_router.get_interface_stats(args.wifi_name)
-            json_out = json.dumps(stat, indent=4, sort_keys=True)
+                del stat["InterfaceStatistics"]
+                stat[f"{urlify(interface)}_Interface"] = stat["Interface"]
+                stat[f"{urlify(interface)}_GetInterfaceStatisticsResult"] = stat[
+                    "GetInterfaceStatisticsResult"
+                ]
+                final_stat.update(stat)
+                del final_stat["Interface"]
+                del final_stat["GetInterfaceStatisticsResult"]
+
+            json_out = json.dumps(final_stat, indent=4, sort_keys=True)
             print(json_out)
             return 0
         else:
