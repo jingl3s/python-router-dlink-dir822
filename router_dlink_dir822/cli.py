@@ -54,7 +54,7 @@ def main():
         "-m",
         "--multiple-net",
         dest="multi_net",
-        default=["RADIO_2.4GHz", "LAN", "WAN"],
+        default=["WLAN2.4G", "LAN", "WAN"],
         metavar="N",
         type=str,
         nargs="+",
