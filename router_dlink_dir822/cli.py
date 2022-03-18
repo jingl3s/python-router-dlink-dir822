@@ -60,6 +60,7 @@ def main():
         nargs="+",
         help="Name of networks interface to retrieve information",
     )
+    statistic.add_argument("-c", "--clear", action="store_true", help="Clear networks statistics",)
     args = parser.parse_args()
 
     try:
@@ -87,29 +88,41 @@ def main():
                 return 20
 
         elif "statistic" == args.command:
-            logger.setLevel(logging.WARN)
-            dlink_router = device_dlink_dir822.DeviceDlink822Factory(
-                password=args.password
-            )
-            final_stat = dict()
-            for interface in args.multi_net:
-                stat = dlink_router.get_interface_stats(interface)
-                # Refactor output to have everything at first level
-                for key, value in stat["InterfaceStatistics"]["StatisticInfo"].items():
-                    stat[f"{urlify(interface)}_{key}"] = value
 
-                del stat["InterfaceStatistics"]
-                stat[f"{urlify(interface)}_Interface"] = stat["Interface"]
-                stat[f"{urlify(interface)}_GetInterfaceStatisticsResult"] = stat[
-                    "GetInterfaceStatisticsResult"
-                ]
-                final_stat.update(stat)
-                del final_stat["Interface"]
-                del final_stat["GetInterfaceStatisticsResult"]
+            if args.clear:
+                dlink_router = device_dlink_dir822.DeviceDlink822Factory(
+                    password=args.password
+                )
+                stat = dlink_router.clear_stats()
+                if stat:
+                    return 0
+                else:
+                    return 1
+            else:
 
-            json_out = json.dumps(final_stat, indent=4, sort_keys=True)
-            print(json_out)
-            return 0
+                logger.setLevel(logging.WARN)
+                dlink_router = device_dlink_dir822.DeviceDlink822Factory(
+                    password=args.password
+                )
+                final_stat = dict()
+                for interface in args.multi_net:
+                    stat = dlink_router.get_interface_stats(interface)
+                    # Refactor output to have everything at first level
+                    for key, value in stat["InterfaceStatistics"]["StatisticInfo"].items():
+                        stat[f"{urlify(interface)}_{key}"] = value
+
+                    del stat["InterfaceStatistics"]
+                    stat[f"{urlify(interface)}_Interface"] = stat["Interface"]
+                    stat[f"{urlify(interface)}_GetInterfaceStatisticsResult"] = stat[
+                        "GetInterfaceStatisticsResult"
+                    ]
+                    final_stat.update(stat)
+                    del final_stat["Interface"]
+                    del final_stat["GetInterfaceStatisticsResult"]
+
+                json_out = json.dumps(final_stat, indent=4, sort_keys=True)
+                print(json_out)
+                return 0
         else:
             print("Missing parameter")
             parser.print_help()

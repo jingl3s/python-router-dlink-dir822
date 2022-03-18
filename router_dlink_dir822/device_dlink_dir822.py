@@ -45,6 +45,14 @@ def DeviceDlink822Factory(
 class RouterDlinkDIR822(Router):
     @auth_required
     def get_wifi_radio_names(self) -> list[str]:
+        """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <soap:Body>
+        <GetOperationMode xmlns="http://purenetworks.com/HNAP1/"/>
+        </soap:Body>
+        </soap:Envelope>
+        """
         radios_id = list()
         radio_available = self.client.call("GetOperationMode")
         if "GetOperationModeResult" in radio_available:
@@ -94,6 +102,23 @@ class RouterDlinkDIR822(Router):
 
             _LOGGER.info(f"Execution status change etat : {execution_status}")
         return wifi_enabled
+
+    @auth_required
+    def clear_stats(self) -> bool:
+        """
+        <?xml version="1.0" encoding="utf-8"?>
+        <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <soap:Body>
+        <ClearStatistics xmlns="http://purenetworks.com/HNAP1/" />
+        </soap:Body>
+        </soap:Envelope>
+        """
+        status_out = self.client.call_raw("ClearStatistics")
+
+        execution_status = ("ClearStatisticsResult>OK<" in status_out)
+
+        _LOGGER.info(f"Execution remise a zero des statistiques : {execution_status}")
+        return execution_status
 
     @auth_required
     def get_interface_stats(self, interface: str):
