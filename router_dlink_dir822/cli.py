@@ -8,6 +8,7 @@ under the terms of the DO WHAT THE FUCK YOU WANT TO. (see the file
 COPYING.txt included with the distribution).
 """
 
+import math
 import argparse
 import json
 import logging
@@ -47,7 +48,7 @@ def main():
     wifi = subparser.add_parser("wifi")
     # wifi_params = wifi.add_subparsers(dest="wifi")
 
-    wifi.add_argument("-c", "--change-state", default=None, type=int)
+    wifi.add_argument("-e", "--enable", action=argparse.BooleanOptionalAction)
     wifi.add_argument("-s", "--state", action="store_true")
     wifi.add_argument("-r", "--radio-name", default="RADIO_2.4GHz", type=str)
     statistic.add_argument(
@@ -70,10 +71,8 @@ def main():
                 password=args.password
             )
 
-            if args.change_state is not None:
-                # text_commande = "Wifi: " + args.change_state
-                expected_state = not (0 == args.change_state)
-                dlink_router.set_wifi_status(args.radio_name, args.change_state)
+            if args.enable is not None:
+                dlink_router.set_wifi_status(args.radio_name, args.enable)
                 return 0
 
             elif args.state:
@@ -109,7 +108,10 @@ def main():
                     stat = dlink_router.get_interface_stats(interface)
                     # Refactor output to have everything at first level
                     for key, value in stat["InterfaceStatistics"]["StatisticInfo"].items():
-                        stat[f"{urlify(interface)}_{key}"] = value
+                        if "Sent" in key or "Received" in key:
+                            stat[f"{urlify(interface)}_{key}"] = math.ceil(int(value)/1024)
+                        else:
+                            stat[f"{urlify(interface)}_{key}"] = value
 
                     del stat["InterfaceStatistics"]
                     stat[f"{urlify(interface)}_Interface"] = stat["Interface"]

@@ -1,0 +1,4 @@
+#/usr/bin/bash
+
+lCheminTravail=$(cd `dirname $0` && pwd) >/dev/null
+HNAP_PASSWORD=<TBD> bash $lCheminTravail/launch.sh $*

@@ -150,3 +150,5 @@ venv*/
 # End of https://www.toptal.com/developers/gitignore/api/python
 *.sublime-workspace
 secret.py
+main_dev.py
+launch_shell.sh
